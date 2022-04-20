@@ -71,10 +71,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	ID3D12GraphicsCommandList* commandList = nullptr;
 	ID3D12CommandQueue* commandQueue = nullptr;
 	ID3D12DescriptorHeap* rtvHeap = nullptr;
-	ID3DBlob* vsBlob = nullptr; // 頂点シェーダオブジェクト
-	ID3DBlob* psBlob = nullptr; // ピクセルシェーダオブジェクト
-	ID3DBlob* errorBlob = nullptr; // エラーオブジェクト
-	ID3D12PipelineState* pipelineState = nullptr;
 
 	//DXGIファクトリーの生成
 	result = CreateDXGIFactory(IID_PPV_ARGS(&dxgiFactory));
@@ -207,50 +203,47 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 	//描画初期化処理　ここから
 
-	//頂点データ
+	// 頂点データ
 	XMFLOAT3 vertices[] = {
-	{ -0.5f, -0.5f, 0.0f }, // 左下
-	{ -0.5f, +0.5f, 0.0f }, // 左上
-	{ +0.5f, -0.5f, 0.0f }, // 右下
+		{ -0.5f, -0.5f, 0.0f }, // 左下
+		{ -0.5f, +0.5f, 0.0f }, // 左上
+		{ +0.5f, -0.5f, 0.0f }, // 右下
 	};
-
-	//頂点データ全体のサイズ = 頂点データ一つ分のサイズ + 頂点データの要素数
+	// 頂点データ全体のサイズ = 頂点データ一つ分のサイズ * 頂点データの要素数
 	UINT sizeVB = static_cast<UINT>(sizeof(XMFLOAT3) * _countof(vertices));
 
-	//頂点バッファの設定
-	D3D12_HEAP_PROPERTIES heapProp{}; //ヒープ設定
-	heapProp.Type = D3D12_HEAP_TYPE_UPLOAD; //GPUへの転送用
-	//リソース設定
+// 頂点バッファの設定
+	D3D12_HEAP_PROPERTIES heapProp{};   // ヒープ設定
+	heapProp.Type = D3D12_HEAP_TYPE_UPLOAD; // GPUへの転送用
+	// リソース設定
 	D3D12_RESOURCE_DESC resDesc{};
 	resDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	resDesc.Width = sizeVB; //頂点データ全体のサイズ
+	resDesc.Width = sizeVB; // 頂点データ全体のサイズ
 	resDesc.Height = 1;
 	resDesc.DepthOrArraySize = 1;
 	resDesc.MipLevels = 1;
 	resDesc.SampleDesc.Count = 1;
 	resDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 
-	//頂点バッファの生成
+	// 頂点バッファの生成
 	ID3D12Resource* vertBuff = nullptr;
 	result = device->CreateCommittedResource(
-		&heapProp, //ヒープ設定
+		&heapProp, // ヒープ設定
 		D3D12_HEAP_FLAG_NONE,
-		&resDesc, //リソース設定
+		&resDesc, // リソース設定
 		D3D12_RESOURCE_STATE_GENERIC_READ,
 		nullptr,
 		IID_PPV_ARGS(&vertBuff));
-
 	assert(SUCCEEDED(result));
 
-	// GPU上のバッファに対応した仮想メモリ(メインメモリ上)を所得
+	// GPU上のバッファに対応した仮想メモリ(メインメモリ上)を取得
 	XMFLOAT3* vertMap = nullptr;
 	result = vertBuff->Map(0, nullptr, (void**)&vertMap);
 	assert(SUCCEEDED(result));
 	// 全頂点に対して
 	for (int i = 0; i < _countof(vertices); i++) {
-		vertMap[i] = vertices[i]; //座標をコピー
+		vertMap[i] = vertices[i];   // 座標をコピー
 	}
-
 	// 繋がりを解除
 	vertBuff->Unmap(0, nullptr);
 
@@ -260,42 +253,47 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	vbView.BufferLocation = vertBuff->GetGPUVirtualAddress();
 	// 頂点バッファのサイズ
 	vbView.SizeInBytes = sizeVB;
-	// 頂点1つ分のデータサイズ
+	// 頂点１つ分のデータサイズ
 	vbView.StrideInBytes = sizeof(XMFLOAT3);
 
-	//頂点シェーダの読み込みとコンパイル
+	ID3DBlob* vsBlob = nullptr; // 頂点シェーダオブジェクト
+	ID3DBlob* psBlob = nullptr; // ピクセルシェーダオブジェクト
+	ID3DBlob* errorBlob = nullptr; // エラーオブジェクト
+
+	// 頂点シェーダの読み込みとコンパイル
 	result = D3DCompileFromFile(
-		L"BasicVS.hlsl", // シェーダファイル名
+		L"BasicVS.hlsl",  // シェーダファイル名
 		nullptr,
-		D3D_COMPILE_STANDARD_FILE_INCLUDE, //インクルード可能にする
-		"main", "vs_5_0", //エントリーポイント名、シェーダモデル指定
-		D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION, //デバック用設定
+		D3D_COMPILE_STANDARD_FILE_INCLUDE, // インクルード可能にする
+		"main", "vs_5_0", // エントリーポイント名、シェーダーモデル指定
+		D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION, // デバッグ用設定
 		0,
 		&vsBlob, &errorBlob);
 
-	//エラーなら
+
+	// エラーなら
 	if (FAILED(result)) {
-		// erroeBlobからエラー内容をstring型にコピー
+		// errorBlobからエラー内容をstring型にコピー
 		std::string error;
 		error.resize(errorBlob->GetBufferSize());
 
 		std::copy_n((char*)errorBlob->GetBufferPointer(),
 			errorBlob->GetBufferSize(),
 			error.begin());
-
 		error += "\n";
-		//エラー内容を出力ウィンドウに表示
+		// エラー内容を出力ウィンドウに表示
 		OutputDebugStringA(error.c_str());
 		assert(0);
 	}
 
+
 	// ピクセルシェーダの読み込みとコンパイル
 	result = D3DCompileFromFile(
-		L"BasicPS.hlsl", // シェーダファイル名
+		L"BasicPS.hlsl",   // シェーダファイル名
 		nullptr,
 		D3D_COMPILE_STANDARD_FILE_INCLUDE, // インクルード可能にする
-		"main", "ps_5_0", // エントリーポイント名、シェーダファイル指定
-		D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION, // デバック用設定
+		"main", "ps_5_0", // エントリーポイント名、シェーダーモデル指定
+		D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION, // デバッグ用設定
 		0,
 		&psBlob, &errorBlob);
 
@@ -317,45 +315,46 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	// 頂点レイアウト
 	D3D12_INPUT_ELEMENT_DESC inputLayout[] = {
 		{
-			"POSITION",0,DXGI_FORMAT_R32G32B32A32_FLOAT,0,
+			"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0,
 			D3D12_APPEND_ALIGNED_ELEMENT,
-			D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA,0
-		},
+			D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0
+		}, // (1行で書いたほうが見やすい)
 	};
 
-	//グラフィックスパイプライン
+
+	// グラフィックスパイプライン設定
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC pipelineDesc{};
 
-	//シェーダの設定
+	// シェーダーの設定
 	pipelineDesc.VS.pShaderBytecode = vsBlob->GetBufferPointer();
 	pipelineDesc.VS.BytecodeLength = vsBlob->GetBufferSize();
 	pipelineDesc.PS.pShaderBytecode = psBlob->GetBufferPointer();
 	pipelineDesc.PS.BytecodeLength = psBlob->GetBufferSize();
 
-	//サンプルマスクの設定
-	pipelineDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK; //標準設定
+	// サンプルマスクの設定
+	pipelineDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK; // 標準設定
 
-	//ラスターライザの設定
-	pipelineDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE; //カリングしない
-	pipelineDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID; //ポリゴン内塗りつぶし
-	pipelineDesc.RasterizerState.DepthClipEnable = true; //深度クリッピングを有効に
+// ラスタライザの設定
+	pipelineDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;  // カリングしない
+	pipelineDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID; // ポリゴン内塗りつぶし
+	pipelineDesc.RasterizerState.DepthClipEnable = true; // 深度クリッピングを有効に
 
-	//プレントステート
-	pipelineDesc.BlendState.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL; //RGBA内全てのチャンネルを描画
+// ブレンドステート
+	pipelineDesc.BlendState.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;  // RBGA全てのチャンネルを描画
 
-	//頂点レイアウトの設定
+// 頂点レイアウトの設定
 	pipelineDesc.InputLayout.pInputElementDescs = inputLayout;
 	pipelineDesc.InputLayout.NumElements = _countof(inputLayout);
 
-	//図形の形状設定
+	// 図形の形状設定
 	pipelineDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 
-	//その他の設定
-	pipelineDesc.NumRenderTargets = 1; //描画対象は1つ
-	pipelineDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB; //0~255指定のRGBA
-	pipelineDesc.SampleDesc.Count = 1; //1ピクセルにつき1回サンプリング
+	// その他の設定
+	pipelineDesc.NumRenderTargets = 1; // 描画対象は1つ
+	pipelineDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB; // 0～255指定のRGBA
+	pipelineDesc.SampleDesc.Count = 1; // 1ピクセルにつき1回サンプリング
 
-	// ルートシグネチャ
+// ルートシグネチャ
 	ID3D12RootSignature* rootSignature;
 	// ルートシグネチャの設定
 	D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc{};
@@ -373,6 +372,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	pipelineDesc.pRootSignature = rootSignature;
 
 	// パイプランステートの生成
+	ID3D12PipelineState* pipelineState = nullptr;
 	result = device->CreateGraphicsPipelineState(&pipelineDesc, IID_PPV_ARGS(&pipelineState));
 	assert(SUCCEEDED(result));
 
@@ -405,7 +405,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 		//4.描画コマンドここから
 
-		// ビューポート設定コマンド
+// ビューポート設定コマンド
 		D3D12_VIEWPORT viewport{};
 		viewport.Width = window_width;
 		viewport.Height = window_height;
@@ -432,7 +432,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		// プリミティブ形状の設定コマンド
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // 三角形リスト
 
-		// 頂点バッファビューの設定コマンド
+// 頂点バッファビューの設定コマンド
 		commandList->IASetVertexBuffers(0, 1, &vbView);
 
 		// 描画コマンド
