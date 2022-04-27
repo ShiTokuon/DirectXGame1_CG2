@@ -239,7 +239,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	// 頂点データ全体のサイズ = 頂点データ一つ分のサイズ * 頂点データの要素数
 	UINT sizeVB = static_cast<UINT>(sizeof(XMFLOAT3) * _countof(vertices));
 
-// 頂点バッファの設定
+	// 頂点バッファの設定
 	D3D12_HEAP_PROPERTIES heapProp{};   // ヒープ設定
 	heapProp.Type = D3D12_HEAP_TYPE_UPLOAD; // GPUへの転送用
 	// リソース設定
@@ -313,7 +313,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		assert(0);
 	}
 
-
 	// ピクセルシェーダの読み込みとコンパイル
 	result = D3DCompileFromFile(
 		L"BasicPS.hlsl",   // シェーダファイル名
@@ -345,8 +344,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0,
 			D3D12_APPEND_ALIGNED_ELEMENT,
 			D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0
-		}, // (1行で書いたほうが見やすい)
+		},// (1行で書いたほうが見やすい)
 	};
+
+
 
 
 	// グラフィックスパイプライン設定
@@ -363,8 +364,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 // ラスタライザの設定
 	pipelineDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;  // カリングしない
-	//pipelineDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID; // ポリゴン内塗りつぶし
-	pipelineDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME; // ワイヤーフレーム
+	pipelineDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID; // ポリゴン内塗りつぶし
+	//pipelineDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME; // ワイヤーフレーム
 	pipelineDesc.RasterizerState.DepthClipEnable = true; // 深度クリッピングを有効に
 
 // ブレンドステート
@@ -449,7 +450,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		//スペースキーを押したら色を切り替える
 		if (key[DIK_SPACE])
 		{
-			FLOAT cleatColor[] = { 0.2f,0.3f,0.3f,0.0f };
+			FLOAT cleatColor[] = { 1.0f,0.2f,0.2f,0.0f };
 			commandList->ClearRenderTargetView(rtvHandle, cleatColor, 0, nullptr);
 		}
 
@@ -457,10 +458,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 // ビューポート設定コマンド
 		D3D12_VIEWPORT viewport{};
-		viewport.Width = 400;
-		viewport.Height = 700;
-		viewport.TopLeftX = 20;
-		viewport.TopLeftY = 40;
+		viewport.Width = window_width;
+		viewport.Height = window_height;
+		viewport.TopLeftX = 0;
+		viewport.TopLeftY = 0;
 		viewport.MinDepth = 0.0f;
 		viewport.MaxDepth = 1.0f;
 		// ビューポート設定コマンドを、コマンドリストに積む
@@ -468,8 +469,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 		// シザー矩形
 		D3D12_RECT scissorRect{};
-		scissorRect.left = 200;                                       // 切り抜き座標左
-		scissorRect.right = 400;        // 切り抜き座標右
+		scissorRect.left = 0;                                       // 切り抜き座標左
+		scissorRect.right = scissorRect.left + window_width;        // 切り抜き座標右
 		scissorRect.top = 0;                                        // 切り抜き座標上
 		scissorRect.bottom = scissorRect.top + window_height;       // 切り抜き座標下
 		// シザー矩形設定コマンドを、コマンドリストに積む
