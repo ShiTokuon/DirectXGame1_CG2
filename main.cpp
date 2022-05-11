@@ -234,7 +234,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	XMFLOAT3 vertices[] = {
 		{ -0.5f, -0.5f, 0.0f }, // 左下
 		{ -0.5f, +0.5f, 0.0f }, // 左上
-		{ 0.0f, 0.0f, 0.0f }, // 右下
+		{ +0.5f, -0.5f, 0.0f }, // 右下
 	};
 	// 頂点データ全体のサイズ = 頂点データ一つ分のサイズ * 頂点データの要素数
 	UINT sizeVB = static_cast<UINT>(sizeof(XMFLOAT3) * _countof(vertices));
@@ -458,17 +458,26 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 // ビューポート設定コマンド
 		D3D12_VIEWPORT viewport{};
-		viewport.Width = window_width;
-		viewport.Height = window_height;
-		viewport.TopLeftX = 0;
-		viewport.TopLeftY = 0;
+		viewport.Width = 200;
+		viewport.Height = 200;
+		viewport.TopLeftX = 2;
+		viewport.TopLeftY = 8;
 		viewport.MinDepth = 0.0f;
 		viewport.MaxDepth = 1.0f;
 		// ビューポート設定コマンドを、コマンドリストに積む
 		commandList->RSSetViewports(1, &viewport);
 
-		// シザー矩形
-		D3D12_RECT scissorRect{};
+		//D3D12_VIEWPORT viewport2{};
+		//viewport2.Width = 1000;
+		//viewport2.Height = 200;
+		//viewport2.TopLeftX = 2;
+		//viewport2.TopLeftY = 8;
+		//viewport2.MinDepth = 0.0f;
+		//viewport2.MaxDepth = 1.0;
+		//
+		//commandList->RSSetViewports(1,&viewport2);
+			// シザー矩形
+			D3D12_RECT scissorRect{};
 		scissorRect.left = 0;                                       // 切り抜き座標左
 		scissorRect.right = scissorRect.left + window_width;        // 切り抜き座標右
 		scissorRect.top = 0;                                        // 切り抜き座標上
