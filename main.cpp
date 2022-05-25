@@ -37,11 +37,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	const int window_width = 1280;
 	const int window_height = 720;
 
-	float r = 1.0f;
-	float g = 0.0f;
-	float b = 0.0f;
-	float f = 0.5f;
-
 	//ウィンドウクラスの設定
 	WNDCLASSEX w{};
 	w.cbSize = sizeof(WNDCLASSEX);
@@ -540,7 +535,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	//ゲームループ
 	while (true) {
 
-		constMapMaterial->color = XMFLOAT4(r, g, b, f);
+		constMapMaterial->color = XMFLOAT4(1, 0, 0, 0.5f);
 
 		//バックバッファの番号を取得
 		UINT bbIndex = swapChain->GetCurrentBackBufferIndex();
@@ -580,16 +575,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 		commandList->ClearRenderTargetView(rtvHandle, cleatColor, 0, nullptr);
 
-		for (int i = 0; i < 5; i++) {
-			if (g >= 1.0f) {
-
-				r = 1.0f;
-				g = 0.0f;
-				continue;
-			}
-			r -= 0.001f;
-			g += 0.001f;
-		}
+		//for (int i = 0; i < 5; i++) {
+		//	if (g >= 1.0f) {
+		//
+		//		r = 1.0f;
+		//		g = 0.0f;
+		//		continue;
+		//	}
+		//	r -= 0.001f;
+		//	g += 0.001f;
+		//}
 
 		//スペースキーを押したら色を切り替える
 		if (key[DIK_SPACE])
