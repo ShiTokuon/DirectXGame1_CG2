@@ -311,7 +311,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	// 縦方向ピクセル数
 	const size_t textureHeight = 256;
 	// 配列の要素数
-	const size_t imageDataCount = textureWidth + textureHeight;
+	const size_t imageDataCount = textureWidth * textureHeight;
 	// 画像イメージデータ配列
 	XMFLOAT4* imageData = new XMFLOAT4[imageDataCount]; // ※必ず後で解放する
 
