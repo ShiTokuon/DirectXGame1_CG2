@@ -554,10 +554,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 // ビューポート設定コマンド
 
 		D3D12_VIEWPORT viewport{};
-		viewport.Width = 200;
-		viewport.Height = 200;
-		viewport.TopLeftX = 2;
-		viewport.TopLeftY = 8;
+		viewport.Width = window_width;
+		viewport.Height = window_height;
+		viewport.TopLeftX = 0;
+		viewport.TopLeftY = 0;
 		viewport.MinDepth = 0.0f;
 		viewport.MaxDepth = 1.0f;
 		// ビューポート設定コマンドを、コマンドリストに積む
